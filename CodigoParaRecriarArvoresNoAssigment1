@@ -1,0 +1,93 @@
+Para alinhar os genes:
+mafft --auto ITS.fasta
+mafft --auto matK.fasta
+mafft --auto ycf1.fasta
+
+Para remover tudo no ficheiro fasta após o terceiro espaço nas linhas com ">" :
+sed -i '/^>/ s/\([^ ]* [^ ]* [^ ]*\).*/\1/' ITS.fasta
+sed -i '/^>/ s/\([^ ]* [^ ]* [^ ]*\).*/\1/' matK.fasta
+sed -i '/^>/ s/\([^ ]* [^ ]* [^ ]*\).*/\1/' ycf1.fasta
+
+*METODO MAXIMUM LIKELIHOOD*
+
+Para descobrir o melhor modelo:
+modeltest-ng -i Its.fasta -t ml 
+modeltest-ng -i matK.fasta -t ml
+modeltest-ng -i ycf1.fasta -t ml
+
+Para fazer a inferencia da arvore com diferentes valores de pars e rand:
+Gene ITS:
+raxml-ng --msa ITS.fasta --model TIM3+G4 --prefix 10.10 --threads 4 --seed 2
+raxml-ng --msa ITS.fasta --model TIM3+G4 --prefix 25.25 --threads 4 --seed 2 --tree pars{25},rand{25}
+raxml-ng --msa ITS.fasta --model TIM3+G4 --prefix 50.50 --threads 4 --seed 2 --tree pars{50},rand{50}
+raxml-ng --msa ITS.fasta --model TIM3+G4 --prefix 75.75 --threads 4 --seed 2 --tree pars{75},rand{75}
+raxml-ng --msa ITS.fasta --model TIM3+G4 --prefix 100.100 --threads 4 --seed 2 --tree pars{100},rand{100}
+Gene matK:
+raxml-ng --msa matK.fasta --prefix 10.10 --seed 2 --threads 4 --tree pars{10},rand{10} --model TVM
+raxml-ng --msa matK.fasta --prefix 25.25 --seed 2 --threads 4 --tree pars{25},rand{25} --model TVM
+raxml-ng --msa matK.fasta --prefix 50.50 --seed 2 --threads 4 --tree pars{50},rand{50} --model TVM
+raxml-ng --msa matK.fasta --prefix 75.75 --seed 2 --threads 4 --tree pars{75},rand{75} --model TVM
+raxml-ng --msa matK.fasta --prefix 100.100 --seed 2 --threads 4 --tree pars{100},rand{100} --model TVM
+Gene ycf1:
+raxml-ng --msa ycf1.fasta --model HKY --prefix 10.10 --threads 4 --seed 2
+raxml-ng --msa ycf1.fasta --model HKY --prefix 25.25 --threads 4 --seed 2 --tree pars{25},rand{25}
+raxml-ng --msa ycf1.fasta --model HKY --prefix 50.50 --threads 4 --seed 2 --tree pars{50},rand{50}
+raxml-ng --msa ycf1.fasta --model HKY --prefix 75.75 --threads 4 --seed 2 --tree pars{75},rand{75}
+raxml-ng --msa ycf1.fasta --model HKY --prefix 100.100 --threads 4 --seed 2 --tree pars{100},rand{100}
+
+Para ver o melhor valor de LogLikeLihood para todas as inferencias da arvore com valores de pars and rand diferentes:
+grep "Final LogLikelihood:" T{10.10,25.25,50.50,75.75,100.100}.raxml.log (Foi realizado em pastas diferentes para não haver problema ja que os prefixos são todos os mesmos)
+
+Para realizar os bootstraps e convergencia dos bootstraps:
+Gene ITS:
+raxml-ng --bootstrap --msa Its.fasta --model TIM3+G4 --threads 4 --seed 333 --bs-trees 10000 --prefix 10k
+raxml-ng --bsconverge --bs-trees 10k.raxml.bootstraps --seed 333 -threads 4 --bs-cutoff 0.03 --prefix Converge10k
+Gene matK:
+raxml-ng --bootstrap --msa matK.fasta --model TVM --prefix 30k --seed 10000 --threads 4 --bs-trees 30000
+raxml-ng --bsconverge --bs-trees 30k.raxml.bootstraps --prefix Converge30k --seed 10000 --threads 4 --bs-cutoff 0.03
+Gene ycf1:
+raxml-ng --bootstrap --msa ycf1.fasta --model HKY --prefix 1k --seed 2 --threads 4 --bs-trees 1000
+raxml-ng --bsconverge --msa ycf1.fasta --model HKY --prefix Converge1k --seed 2 --threads 4 --bs-cutoff 0.03 --bs-trees 1k.raxml.bootstraps
+
+Para obter a melhor arvore com os valores de bootstrap:
+Gene ITS:
+raxml-ng --support --bs-trees 10k.raxml.bootstraps --tree 75.75.raxml.bestTree --threads 4
+Gene matK:
+raxml-ng --support --bs-trees 30k.raxml.bootstraps --tree 50.50.raxml.bestTree --threads 4
+Gene ycf1:
+raxml-ng --support --tree 10.10.raxml.bestTree --bs-trees 1k.raxml.bootstraps --threads 4
+
+*METODO BAYESIAN INFERENCE*
+
+Para converter o ficheiro fasta para nexus:
+seqret -sequence ITS.fasta -outseq ITS.nexus -osformat nexus
+seqret -sequence matK.fasta -outseq matK.nexus -osformat nexus
+seqret -sequence ycf1.fasta -outseq ycf1.nexus -osformat nexus
+
+Depois adicionou-se um data block do mrbayes dentro do ficheiro nexus:
+Gene ITS:
+begin mrbayes;
+  set autoclose=yes;
+  outgroup ON870409.1_Tulipa_gr;
+  mcmcp ngen=5000 printfreq=1000 samplefreq=100 diagnfreq=500 nchains=4 savebrlens=yes filename=ArvoreB;
+  mcmc;
+  sumt filename=ArvoreB;
+end;
+
+Gene matK:
+begin mrbayes;
+  set autoclose=yes;
+  outgroup KM085643.1_Lilium_pu;
+  mcmcp ngen=10000000 printfreq=1000 samplefreq=100 diagnfreq=500 nchains=4 savebrlens=yes filename=ArvoreD;
+  mcmc;
+  sumt filename=ArvoreD;
+end;
+
+Gene ycf1:
+begin mrbayes;
+  set autoclose=yes;
+  outgroup KU303350.1_Tulipa_hu;
+  mcmcp ngen=1000000 printfreq=1000 samplefreq=100 diagnfreq=500 nchains=4 savebrlens=yes filename=ArvoreF;
+  mcmc;
+  sumt filename=ArvoreF;
+end;
