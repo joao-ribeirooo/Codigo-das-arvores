@@ -68,7 +68,7 @@ Depois adicionou-se um data block do mrbayes dentro do ficheiro nexus:
 Gene ITS:
 begin mrbayes;
   set autoclose=yes;
-  outgroup ON870409.1_Tulipa_gr;
+  outgroup EU219391.1_Lilium_su;
   mcmcp ngen=5000 printfreq=1000 samplefreq=100 diagnfreq=500 nchains=4 savebrlens=yes filename=ArvoreB;
   mcmc;
   sumt filename=ArvoreB;
@@ -86,7 +86,7 @@ end;
 Gene ycf1:
 begin mrbayes;
   set autoclose=yes;
-  outgroup KU303350.1_Tulipa_hu;
+  outgroup MK954109.1_107276-10;
   mcmcp ngen=1000000 printfreq=1000 samplefreq=100 diagnfreq=500 nchains=4 savebrlens=yes filename=ArvoreF;
   mcmc;
   sumt filename=ArvoreF;
